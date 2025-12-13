@@ -1,0 +1,29 @@
+[package]
+name = "api"
+description = "High-level API in Rust that uses RFID USB Device and E7umf Protocol Library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+protocol = { workspace = true }
+workspace-hack = { workspace = true }
+
+hidapi = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+
+[build-dependencies]
+
+[lib]
+name = "api"
+path = "src/lib.rs"
+
+[[bench]]
+name = "api"
+harness = false

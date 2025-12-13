@@ -1,0 +1,65 @@
+[workspace]
+members = [
+    "src/protocol",
+    "src/api",
+    "src/app",
+    "workspace-hack",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+
+[workspace.lints.clippy]
+# Enforce explicit types where needed
+# let_underscore_untyped = "deny"  # Use "deny" to make it an error.
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+pedantic = { level = "warn", priority = -1 }
+type_complexity = "warn"
+
+
+[workspace.lints.rust]
+# Enforce documentation
+missing_docs = "warn"
+
+[workspace.dependencies]
+# Workspace components
+protocol = { path = "src/protocol"}
+api = { path = "src/api" }
+app = { path = "src/app" }
+workspace-hack = { path = "workspace-hack", version = "0.1.0" }
+
+# Components depenencies
+clap = { version = "4.5.53" }
+colorful = { version = "0.3.2" }
+crossterm = { version = "0.29.0" }
+hex = { version = "0.4.3" }
+hidapi = { version = "2.6.3" }
+ratatui = { version = "0.29.0" }
+strum = { version = "0.27.2"}
+thiserror = { version = "2.0.17" }
+
+# Development dependencies
+criterion = { version = "0.8.1", features = ["html_reports"] }
+
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+[profile.test]
+debug = true
+debug-assertions = true
+opt-level = 0
+overflow-checks = true
+
+[profile.bench]
+debug = true
+opt-level = 3

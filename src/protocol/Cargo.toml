@@ -1,0 +1,29 @@
+[package]
+name = "protocol"
+description = "Implementation of E7umf RFID Protocol in Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+workspace-hack = { workspace = true }
+
+hex = { workspace = true }
+thiserror = { workspace = true }
+
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+
+[build-dependencies]
+
+[lib]
+name = "protocl"
+path = "src/lib.rs"
+
+[[bench]]
+name = "protocol"
+harness = false

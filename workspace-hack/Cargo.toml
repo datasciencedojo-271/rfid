@@ -1,0 +1,27 @@
+[package]
+name = "workspace-hack"
+version = "0.1.0"
+edition = "2024"
+description = "Feature unification hack crate managed by cargo-hakari"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[package.metadata.hakari]
+managed = true
+
+# The parts of the file between the BEGIN HAKARI SECTION and END HAKARI SECTION comments
+# are managed by hakari.
+
+### BEGIN HAKARI SECTION
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_builder = { version = "4", default-features = false, features = ["color", "help", "std", "suggestions", "usage"] }
+
+[build-dependencies]
+proc-macro2 = { version = "1" }
+quote = { version = "1" }
+syn = { version = "2", features = ["extra-traits", "full"] }
+
+### END HAKARI SECTION
