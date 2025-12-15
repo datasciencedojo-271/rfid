@@ -90,7 +90,7 @@ pub enum MenuItem {
 }
 
 impl MenuItem {
-    pub fn to_string(&self) -> &'static str {
+    pub fn to_string(self) -> &'static str {
         match self {
             MenuItem::Inventory => "[i] Inventory (Scan for Tags)",
             MenuItem::ReadTag => "[r] Read Tag",
@@ -150,7 +150,7 @@ impl App {
         }
     }
 
-    pub fn on_tick(&mut self) {
+    pub fn on_tick() {
         // Update state on timer tick
         // This could include checking device connection, updating inventory, etc.
     }
@@ -181,20 +181,11 @@ impl App {
 
     pub fn next_input_field(&mut self) {
         match self.state {
-            AppState::Read => {
-                self.active_input_field = (self.active_input_field + 1) % 3;
-            }
-            AppState::Write => {
+            AppState::Read | AppState::Write => {
                 self.active_input_field = (self.active_input_field + 1) % 3;
             }
             AppState::Lock => {
                 self.active_input_field = (self.active_input_field + 1) % 2;
-            }
-            AppState::Password => {
-                // Only one field
-            }
-            AppState::Raw => {
-                // Only one field
             }
             _ => {}
         }
@@ -202,14 +193,7 @@ impl App {
 
     pub fn prev_input_field(&mut self) {
         match self.state {
-            AppState::Read => {
-                self.active_input_field = if self.active_input_field == 0 {
-                    2
-                } else {
-                    self.active_input_field - 1
-                };
-            }
-            AppState::Write => {
+            AppState::Read | AppState::Write => {
                 self.active_input_field = if self.active_input_field == 0 {
                     2
                 } else {
@@ -218,12 +202,6 @@ impl App {
             }
             AppState::Lock => {
                 self.active_input_field = usize::from(self.active_input_field == 0);
-            }
-            AppState::Password => {
-                // Only one field
-            }
-            AppState::Raw => {
-                // Only one field
             }
             _ => {}
         }
@@ -234,7 +212,7 @@ impl App {
         match self.state {
             AppState::Read => {
                 match self.active_input_field {
-                    0 => { /* Bank selection is handled separately */ }
+                    // 0 => { /* Bank selection is handled separately */ }
                     1 => {
                         // Address - only digits
                         if c.is_ascii_digit() {
@@ -252,7 +230,7 @@ impl App {
             }
             AppState::Write => {
                 match self.active_input_field {
-                    0 => { /* Bank selection is handled separately */ }
+                    // 0 => { /* Bank selection is handled separately */ }
                     1 => {
                         // Address - only digits
                         if c.is_ascii_digit() {
@@ -267,9 +245,6 @@ impl App {
                     }
                     _ => {}
                 }
-            }
-            AppState::Lock => {
-                // Selection-based fields, no character input
             }
             AppState::Password => {
                 // Password - hex digits
@@ -366,8 +341,7 @@ impl App {
         self.write_bank = match self.write_bank {
             MemoryBank::Epc => MemoryBank::Tid,
             MemoryBank::Tid => MemoryBank::User,
-            MemoryBank::User => MemoryBank::Epc,
-            _ => MemoryBank::Epc,
+            MemoryBank::User | MemoryBank::Reserved => MemoryBank::Epc,
         };
     }
 
@@ -375,9 +349,8 @@ impl App {
     pub fn prev_write_bank(&mut self) {
         self.write_bank = match self.write_bank {
             MemoryBank::Epc => MemoryBank::User,
-            MemoryBank::Tid => MemoryBank::Epc,
+            MemoryBank::Tid | MemoryBank::Reserved=> MemoryBank::Epc,
             MemoryBank::User => MemoryBank::Tid,
-            _ => MemoryBank::Epc,
         };
     }
 

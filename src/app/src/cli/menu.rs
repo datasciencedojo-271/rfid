@@ -49,7 +49,7 @@ impl MenuOption {
         }
     }
 
-    pub fn to_string(&self) -> &'static str {
+    pub fn string_value(self) -> &'static str {
         match self {
             // Main menu options
             Self::Inventory => "Inventory (scan for tags)",
@@ -160,36 +160,36 @@ impl Menu {
     }
 
     pub fn display(&self) {
-        self.clear_screen();
+        Self::clear_screen();
         if self.in_advanced_menu {
-            self.display_advanced_menu();
+            Self::display_advanced_menu();
         } else {
-            self.display_main_menu();
+            Self::display_main_menu();
         }
     }
 
-    fn display_main_menu(&self) {
+    fn display_main_menu() {
         println!("\n┌──────────────────────────────────┐");
         println!("│    UHF RFID Programmer - Menu    │");
         println!("└──────────────────────────────────┘\n");
-        println!("1. {}", MenuOption::Inventory.to_string());
-        println!("2. {}", MenuOption::ReadTag.to_string());
-        println!("3. {}", MenuOption::WriteTag.to_string());
-        println!("4. {}", MenuOption::LockTag.to_string());
-        println!("5. {}", MenuOption::SetPassword.to_string());
-        println!("6. {}", MenuOption::AdvancedOptions.to_string());
-        println!("7. {}", MenuOption::Quit.to_string());
+        println!("1. {}", MenuOption::Inventory.string_value());
+        println!("2. {}", MenuOption::ReadTag.string_value());
+        println!("3. {}", MenuOption::WriteTag.string_value());
+        println!("4. {}", MenuOption::LockTag.string_value());
+        println!("5. {}", MenuOption::SetPassword.string_value());
+        println!("6. {}", MenuOption::AdvancedOptions.string_value());
+        println!("7. {}", MenuOption::Quit.string_value());
     }
 
-    fn display_advanced_menu(&self) {
+    fn display_advanced_menu() {
         println!("\n┌──────────────────────────────────┐");
         println!("│  UHF RFID Programmer - Advanced  │");
         println!("└──────────────────────────────────┘\n");
-        println!("1. {}", MenuOption::ShowDeviceInfo.to_string());
-        println!("2. {}", MenuOption::ManualCommand.to_string());
-        println!("3. {}", MenuOption::DeviceAction.to_string());
-        println!("4. {}", MenuOption::RunTest.to_string());
-        println!("5. {}", MenuOption::BackToMain.to_string());
+        println!("1. {}", MenuOption::ShowDeviceInfo.string_value());
+        println!("2. {}", MenuOption::ManualCommand.string_value());
+        println!("3. {}", MenuOption::DeviceAction.string_value());
+        println!("4. {}", MenuOption::RunTest.string_value());
+        println!("5. {}", MenuOption::BackToMain.string_value());
     }
 
     pub fn get_choice(&self) -> MenuOption {
@@ -214,7 +214,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_memory_bank(&self) -> MemoryBank {
+    pub fn prompt_for_memory_bank() -> MemoryBank {
         println!("\nSelect memory bank:");
         println!("1. Reserved (passwords)");
         println!("2. EPC");
@@ -242,7 +242,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_lockable_memory_bank(&self) -> LockableMemoryBank {
+    pub fn prompt_for_lockable_memory_bank() -> LockableMemoryBank {
         println!("\nSelect memory bank to lock:");
         println!("1. Kill Password");
         println!("2. Access Password");
@@ -273,7 +273,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_lock_action(&self) -> LockAction {
+    pub fn prompt_for_lock_action() -> LockAction {
         println!("\nSelect lock action:");
         println!("1. Writeable (no protection)");
         println!("2. Permanently Writeable");
@@ -301,7 +301,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_address(&self) -> u32 {
+    pub fn prompt_for_address() -> u32 {
         loop {
             print("Enter address (decimal): ");
             io::stdout().flush().unwrap();
@@ -318,7 +318,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_word_count(&self) -> u32 {
+    pub fn prompt_for_word_count() -> u32 {
         loop {
             print("Enter word count (1 word = 2 bytes): ");
             io::stdout().flush().unwrap();
@@ -336,7 +336,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_hex_data(&self) -> Vec<u8> {
+    pub fn prompt_for_hex_data() -> Vec<u8> {
         loop {
             print("Enter hex data (e.g., 01020304): ");
             io::stdout().flush().unwrap();
@@ -360,7 +360,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_for_password(&self) -> u32 {
+    pub fn prompt_for_password() -> u32 {
         loop {
             print("Enter password (hexadecimal, 8 characters): ");
             io::stdout().flush().unwrap();
@@ -384,7 +384,7 @@ impl Menu {
         }
     }
 
-    pub fn prompt_to_continue(&self) {
+    pub fn prompt_to_continue() {
         println!("\nPress Enter to continue...");
         let mut input = String::new();
         io::stdin()
@@ -392,7 +392,7 @@ impl Menu {
             .expect("Failed to read input");
     }
 
-    fn clear_screen(&self) {
+    fn clear_screen() {
         // Print ANSI escape code to clear the screen
         print!("\x1B[2J\x1B[1;1H");
         io::stdout().flush().unwrap();

@@ -168,7 +168,11 @@ pub trait UsbIo {
     /// * `data`: data in bytes
     /// * `timeout`: timeout for the read operation
     ///
-    /// returns: Result<usize, UhfError>
+    /// returns: Result<usize, `UhfError`>
+    ///
+    /// # Errors
+    ///
+    /// `UhfError`
     ///
     fn read_bulk(
         &self,
@@ -185,7 +189,12 @@ pub trait UsbIo {
     /// * `data`: data in bytes
     /// * `timeout`: timeout for the write operation
     ///
-    /// returns: Result<usize, UhfError>
+    /// returns: Result<usize, `UhfError`>
+    ///
+    /// # Errors
+    ///
+    /// `UhfError`
+    ///
     fn write_bulk(
         &self,
         endpoint: u8,

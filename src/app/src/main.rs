@@ -1,9 +1,11 @@
+//! Application state for the TUI
+
 #![warn(clippy::pedantic)]
 
 mod cli;
 mod tui;
 
-use crate::cli::{commands::Cli, run_cli};
+use crate::cli::{commands::CliArguments, run_cli};
 use crate::tui::run_tui;
 use api::api::error::RfidError;
 use api::platform;
@@ -19,7 +21,7 @@ fn main() -> Result<(), RfidError> {
     }
 
     // Parse command line arguments to check for CLI mode
-    let cli = Cli::parse();
+    let cli = CliArguments::parse();
 
     // Run either CLI or TUI based on arguments
 

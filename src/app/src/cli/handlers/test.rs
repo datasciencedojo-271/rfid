@@ -23,7 +23,7 @@ pub fn handle(device: &UsbDevice) -> Result<(), RfidError> {
     println!("USER Data: {}", user_hex.color(Color::Green));
     // Read Reserved
     println!("\n{}", "Reading Reserved memory bank:".color(Color::Yellow));
-    let reserved_data = UhfRfidApi::read(device, MemoryBank::Reserved, 0, 4)?;
+    let reserved_data = UhfRfidApi::read(device, MemoryBank::Reserved, 0, 8)?;
     let reserved_hex = UhfRfidApi::hex_to_ascii(&reserved_data);
     println!("Reserved Data: {}", reserved_hex.color(Color::Green));
     // Perform beep + green LED action

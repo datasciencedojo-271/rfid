@@ -4,7 +4,7 @@ use api::api::error::RfidError;
 use api::rfid_device::usb_device::UsbDevice;
 use clap::Parser;
 use colorful::{Color, Colorful};
-use commands::{Cli, Commands};
+use commands::{CliArguments, Commands};
 use std::process;
 
 pub mod app;
@@ -14,7 +14,7 @@ pub mod menu;
 
 pub fn run_cli() -> Result<(), RfidError> {
     // Parse command line arguments
-    let cli = Cli::parse();
+    let cli = CliArguments::parse();
 
     // Create a device with the appropriate debug setting
     let device = match UsbDevice::new() {
@@ -53,7 +53,10 @@ pub fn run_cli() -> Result<(), RfidError> {
         Commands::Write(args) => handlers::write::handle(&device, args),
         Commands::Lock(args) => handlers::lock::handle(&device, args),
         Commands::Password(args) => handlers::password::handle(&device, args),
-        Commands::DeviceInfo => handlers::device_info::handle(&device),
+        Commands::DeviceInfo => {
+            handlers::device_info::handle(&device);
+            Ok(())
+        },
         Commands::RawCommand(args) => handlers::raw_command::handle(&device, args),
         Commands::Action(args) => handlers::device_action::handle(&device, args),
         Commands::Test => handlers::test::handle(&device),

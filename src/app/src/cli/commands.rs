@@ -7,7 +7,7 @@ use protocl::types::{LockAction, LockableMemoryBank, MemoryBank};
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
-pub struct Cli {
+pub struct CliArguments {
     /// Enable debug output
     #[arg(short, long)]
     pub debug: bool,

@@ -1,8 +1,7 @@
-use api::api::error::RfidError;
 use api::rfid_device::usb_device::UsbDevice;
 use colorful::{Color, Colorful};
 
-pub fn handle(device: &UsbDevice) -> Result<(), RfidError> {
+pub fn handle(device: &UsbDevice) {
     println!("{}", "Device Information:".color(Color::Cyan).bold());
     println!("{}", "--------------------".color(Color::Cyan));
     let info = device.get_info();
@@ -56,5 +55,4 @@ pub fn handle(device: &UsbDevice) -> Result<(), RfidError> {
     println!("{}", "\nChecking device capabilities...".color(Color::Cyan));
     // This would depend on your specific device's capabilities
     // Implement if your device supports this
-    Ok(())
 }

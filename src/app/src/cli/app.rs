@@ -31,7 +31,7 @@ pub fn run_interactive_app() -> Result<(), RfidError> {
             MenuOption::AdvancedOptions => unsafe {
                 std::ptr::write(&raw mut menu.in_advanced_menu, true);
             },
-            MenuOption::ShowDeviceInfo => handle_device_info(&device, &menu)?,
+            MenuOption::ShowDeviceInfo => handle_device_info(&device, &menu),
             MenuOption::ManualCommand => handle_manual_command(&device, &menu)?,
             MenuOption::DeviceAction => handle_device_action(&device, &menu)?,
             MenuOption::RunTest => handle_run_test(&device, &menu)?,
@@ -50,7 +50,7 @@ pub fn run_interactive_app() -> Result<(), RfidError> {
     Ok(())
 }
 
-fn handle_inventory(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_inventory(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     println!("\nPerforming inventory (scanning for tags)...");
     match UhfRfidApi::inventory(device) {
         Ok(tags) => {
@@ -62,7 +62,7 @@ fn handle_inventory(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
                     println!("  {}: {}", i + 1, tag);
                 }
             }
-            menu.prompt_to_continue();
+            Menu::prompt_to_continue();
             Ok(())
         }
         Err(e) => {
@@ -72,7 +72,7 @@ fn handle_inventory(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
     }
 }
 
-fn handle_read_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_read_tag(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     // First, do an inventory to check if tags are in range.
     println!("\nChecking for tags in range...");
     match UhfRfidApi::inventory(device) {
@@ -80,16 +80,16 @@ fn handle_read_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
         Ok(tags) => {
             if tags.is_empty() {
                 println!("No tags found in range. Please place a tag near the reader.");
-                menu.prompt_to_continue();
+                Menu::prompt_to_continue();
                 return Ok(());
             }
 
             println!("Found {} tags in range.", tags.len());
 
             // Prompt for memory bank, address, and word count
-            let bank = menu.prompt_for_memory_bank();
-            let address = menu.prompt_for_address();
-            let word_count = menu.prompt_for_word_count();
+            let bank = Menu::prompt_for_memory_bank();
+            let address = Menu::prompt_for_address();
+            let word_count = Menu::prompt_for_word_count();
 
             println!("\nReading {word_count} words from {bank:?} memory at address {address}...");
             match UhfRfidApi::read(device, bank, address, word_count) {
@@ -109,7 +109,7 @@ fn handle_read_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
                         }
                         println!();
                     }
-                    menu.prompt_to_continue();
+                    Menu::prompt_to_continue();
                     Ok(())
                 }
                 Err(e) => {
@@ -121,14 +121,14 @@ fn handle_read_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
     }
 }
 
-fn handle_write_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_write_tag(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     // First, do an inventory to check if tags are in range
     println!("\nChecking for tags in range...");
     let tags = UhfRfidApi::inventory(device)?;
 
     if tags.is_empty() {
         println!("No tags found in range. Please place a tag near the reader.");
-        menu.prompt_to_continue();
+        Menu::prompt_to_continue();
         return Ok(());
     }
 
@@ -144,15 +144,15 @@ fn handle_write_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
             .expect("Failed to read input");
         if !input.trim().eq_ignore_ascii_case("y") {
             println!("Operation cancelled.");
-            menu.prompt_to_continue();
+            Menu::prompt_to_continue();
             return Ok(());
         }
     }
 
     // Prompt for a memory bank, address, and data
-    let bank = menu.prompt_for_memory_bank();
-    let address = menu.prompt_for_address();
-    let data = menu.prompt_for_hex_data();
+    let bank = Menu::prompt_for_memory_bank();
+    let address = Menu::prompt_for_address();
+    let data = Menu::prompt_for_hex_data();
 
     println!(
         "\nWriting {} bytes to {:?} memory at address {}...",
@@ -165,11 +165,11 @@ fn handle_write_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
         Err(e) => println!("Write failed: {e}"),
     }
 
-    menu.prompt_to_continue();
+    Menu::prompt_to_continue();
     Ok(())
 }
 
-fn handle_lock_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_lock_tag(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     // First, do an inventory to check if tags are in range
     println!("\nChecking for tags in range...");
     match UhfRfidApi::inventory(device) {
@@ -177,7 +177,7 @@ fn handle_lock_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
         Ok(tags) => {
             if tags.is_empty() {
                 println!("No tags found in range. Please place a tag near the reader.");
-                menu.prompt_to_continue();
+                Menu::prompt_to_continue();
                 return Ok(());
             }
 
@@ -193,7 +193,7 @@ fn handle_lock_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
                     .expect("Failed to read input");
                 if !input.trim().eq_ignore_ascii_case("y") {
                     println!("Operation cancelled.");
-                    menu.prompt_to_continue();
+                    Menu::prompt_to_continue();
                     return Ok(());
                 }
             }
@@ -210,19 +210,19 @@ fn handle_lock_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
                 .expect("Failed to read input");
             if !input.trim().eq_ignore_ascii_case("y") {
                 println!("Operation cancelled.");
-                menu.prompt_to_continue();
+                Menu::prompt_to_continue();
                 return Ok(());
             }
 
             // Prompt for memory bank and lock action
-            let bank = menu.prompt_for_lockable_memory_bank();
-            let action = menu.prompt_for_lock_action();
+            let bank = Menu::prompt_for_lockable_memory_bank();
+            let action = Menu::prompt_for_lock_action();
 
             println!("\nLocking {bank:?} memory with {action:?} action...");
             match UhfRfidApi::lock_memory_bank(device, bank, action) {
                 Ok(()) => {
                     println!("Lock operation successful!");
-                    menu.prompt_to_continue();
+                    Menu::prompt_to_continue();
                     Ok(())
                 }
                 Err(e) => {
@@ -234,7 +234,7 @@ fn handle_lock_tag(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
     }
 }
 
-fn handle_set_password(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_set_password(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     // First, do an inventory to check if tags are in range
     println!("\nChecking for tags in range...");
     match UhfRfidApi::inventory(device) {
@@ -242,7 +242,7 @@ fn handle_set_password(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError>
         Ok(tags) => {
             if tags.is_empty() {
                 println!("No tags found in range. Please place a tag near the reader.");
-                menu.prompt_to_continue();
+                Menu::prompt_to_continue();
                 return Ok(());
             }
 
@@ -260,13 +260,13 @@ fn handle_set_password(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError>
                     .expect("Failed to read input");
                 if !input.trim().eq_ignore_ascii_case("y") {
                     println!("Operation cancelled.");
-                    menu.prompt_to_continue();
+                    Menu::prompt_to_continue();
                     return Ok(());
                 }
             }
 
             // Prompt for password
-            let password = menu.prompt_for_password();
+            let password = Menu::prompt_for_password();
 
             println!("\nSetting access password to {password:08X}...");
             match UhfRfidApi::set_access_password(device, password) {
@@ -274,7 +274,7 @@ fn handle_set_password(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError>
                     println!("Password set successfully!");
                     println!("⚠️  IMPORTANT: Make sure to write down this password! ⚠️");
                     println!("If you lose this password, you may not be able to access your tag.");
-                    menu.prompt_to_continue();
+                    Menu::prompt_to_continue();
                     Ok(())
                 }
                 Err(e) => {
@@ -286,7 +286,7 @@ fn handle_set_password(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError>
     }
 }
 
-fn handle_device_info(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_device_info(device: &UsbDevice, _menu: &Menu) {
     println!("\nDevice Information:");
     println!("--------------------");
     println!("Device: {}", device.get_info());
@@ -303,11 +303,10 @@ fn handle_device_info(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> 
     // This would depend on your specific device's capabilities
     // Implement if your device supports this
 
-    menu.prompt_to_continue();
-    Ok(())
+    Menu::prompt_to_continue();
 }
 
-fn handle_manual_command(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_manual_command(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     println!("\nManual Command Mode");
     println!("------------------");
     println!("This mode allows sending raw commands to the device.");
@@ -325,12 +324,12 @@ fn handle_manual_command(device: &UsbDevice, menu: &Menu) -> Result<(), RfidErro
         .expect("Failed to read input");
     if !input.trim().eq_ignore_ascii_case("y") {
         println!("Operation cancelled.");
-        menu.prompt_to_continue();
+        Menu::prompt_to_continue();
         return Ok(());
     }
 
     // Get the command data
-    let data = menu.prompt_for_hex_data();
+    let data = Menu::prompt_for_hex_data();
 
     println!("\nSending command: {}", UhfRfidApi::hex_to_ascii(&data));
     match device.write(&data) {
@@ -363,11 +362,11 @@ fn handle_manual_command(device: &UsbDevice, menu: &Menu) -> Result<(), RfidErro
         Err(e) => println!("Error sending command: {e}"),
     }
 
-    menu.prompt_to_continue();
+    Menu::prompt_to_continue();
     Ok(())
 }
 
-fn handle_device_action(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_device_action(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     println!("\nDevice Action (LED/Beep)");
     println!("Enter actions separated by '+', options: beep, red, green, yellow");
     print("Actions: ");
@@ -388,14 +387,14 @@ fn handle_device_action(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError
             "" => {}
             other => {
                 println!("Unknown action: {other}");
-                menu.prompt_to_continue();
+                Menu::prompt_to_continue();
                 return Ok(());
             }
         }
     }
     if actions.is_empty() {
         println!("No actions specified.");
-        menu.prompt_to_continue();
+        Menu::prompt_to_continue();
         return Ok(());
     }
 
@@ -411,11 +410,11 @@ fn handle_device_action(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError
         Ok(()) => println!("Action performed successfully!"),
         Err(e) => println!("Action failed: {e}"),
     }
-    menu.prompt_to_continue();
+    Menu::prompt_to_continue();
     Ok(())
 }
 
-fn handle_run_test(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
+fn handle_run_test(device: &UsbDevice, _menu: &Menu) -> Result<(), RfidError> {
     println!("\nRunning basic UHF test...");
     // EPC
     println!("\nReading EPC memory bank:");
@@ -431,14 +430,14 @@ fn handle_run_test(device: &UsbDevice, menu: &Menu) -> Result<(), RfidError> {
     println!("USER: {}", UhfRfidApi::hex_to_ascii(&user));
     // Reserved
     println!("\nReading Reserved memory bank:");
-    let res = UhfRfidApi::read(device, MemoryBank::Reserved, 0, 4)?;
+    let res = UhfRfidApi::read(device, MemoryBank::Reserved, 0, 8)?;
     println!("Reserved: {}", UhfRfidApi::hex_to_ascii(&res));
 
     // Action
     println!("\nPerforming beep + green LED action...");
     UhfRfidApi::device_action(device, &[DeviceAction::Beep, DeviceAction::GreenLed], 50)?;
     println!("Test completed successfully.");
-    menu.prompt_to_continue();
+    Menu::prompt_to_continue();
     Ok(())
 }
 

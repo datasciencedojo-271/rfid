@@ -42,6 +42,18 @@ impl fmt::Display for DeviceInfo {
     }
 }
 
+macro_rules! hidapi_str {
+    ($x: expr) => {
+        match $x {
+            Ok(s) => match s {
+                Some(s) => s,
+                None => return Err(UsbError::Usb("Can't read device information.".to_string()))
+            },
+            Err(e) => return Err(UsbError::Usb(e.to_string()))
+        }
+    };
+}
+
 impl UsbDevice {
     /// Discover and open the RFID device.
     ///
@@ -65,9 +77,9 @@ impl UsbDevice {
         let info = DeviceInfo {
             vendor_id: VENDOR_ID,
             product_id: PRODUCT_ID,
-            manufacturer: device.get_manufacturer_string().unwrap().unwrap(),
-            product: device.get_product_string().unwrap().unwrap(),
-            serial_number: device.get_serial_number_string().unwrap().unwrap(),
+            manufacturer: hidapi_str!(device.get_manufacturer_string()),
+            product: hidapi_str!(device.get_product_string()),
+            serial_number: hidapi_str!(device.get_serial_number_string()),
         };
 
         Ok(Self {
@@ -77,36 +89,17 @@ impl UsbDevice {
         })
     }
 
-    /*
-        // Polling loop example
-        pub fn poll_tags<F>(&self, mut callback: F) -> Result<(), HidError>
-        where
-            F: FnMut(&[u8]),
-        {
-            let mut buf = vec![0u8; self.report_size];
-            loop {
-                let len = self.device.read(&mut buf)?;
-                if len > 0 {
-                    let report = &buf[..len];
-                    // Skip report ID if present
-                    let payload = if report[0] == 0x00 { &report[1..] } else { report };
-                    callback(payload);
-                }
-            }
-        }
-    */
-
     /// Read using the bulk IN endpoint
     /// # Errors
     /// Returns a USB error if no device is connected or the read fails.
-    fn read_bulk_impl(&self, _buffer: &mut [u8], _timeout: Duration) -> Result<usize, UsbError> {
+    fn read_bulk_impl(&self, buffer: &mut [u8], timeout: Duration) -> Result<usize, UsbError> {
         if !self.connected {
             return Err(UsbError::Usb("Device not connected".to_string()));
         }
 
         match self
             .device
-            .read_timeout(_buffer, _timeout.as_millis() as i32)
+            .read_timeout(buffer, i32::try_from(timeout.as_millis()).unwrap_or(0))
         {
             Ok(len) => Ok(len),
             Err(e) => Err(UsbError::Usb(e.to_string())),
@@ -123,13 +116,13 @@ impl UsbDevice {
     /// Write using the bulk OUT endpoint
     /// # Errors
     /// Returns a USB error if no device is connected or the write operation fails.
-    fn write_bulk_impl(&self, _data: &[u8], _timeout: Duration) -> Result<usize, UsbError> {
+    fn write_bulk_impl(&self, data: &[u8], _timeout: Duration) -> Result<usize, UsbError> {
         if !self.connected {
             return Err(UsbError::Usb("Device not connected".to_string()));
         }
 
         let mut buf = vec![0u8];
-        buf.extend_from_slice(_data);
+        buf.extend_from_slice(data);
         match self.device.write(&buf) {
             Ok(len) => Ok(len),
             Err(e) => Err(UsbError::Usb(e.to_string())),
@@ -144,27 +137,32 @@ impl UsbDevice {
     }
 
     /// Get claimed interface number
+    #[must_use]
     pub fn get_interface(&self) -> u8 {
         0
     }
 
     /// Get IN endpoint address
+    #[must_use]
     pub fn get_in_endpoint(&self) -> u8 {
         ENDPOINT_IN
     }
 
     /// Get OUT endpoint address
+    #[must_use]
     pub fn get_out_endpoint(&self) -> u8 {
         ENDPOINT_OUT
     }
 
     /// Get device descriptive information
+    #[must_use]
     pub fn get_info(&self) -> &DeviceInfo {
         &self.info
     }
 
     /// Check if the device is currently connected
     /// Returns true if a device handle is available
+    #[must_use]
     pub fn is_connected(&self) -> bool {
         self.connected
     }

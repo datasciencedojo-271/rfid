@@ -50,14 +50,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), R
     match UsbDevice::new() {
         Ok(device) => {
             app.device = Some(device);
-            app.status_message =
-                format!("Connected to {}", app.device.as_ref().unwrap().get_info());
+            format!("Connected to {}", app.device.as_ref().unwrap().get_info()).clone_into(&mut app.status_message);
 
             // Get initial inventory
             update_inventory(&mut app);
         }
         Err(e) => {
-            app.status_message = format!("Failed to connect to device: {e}");
+            format!("Failed to connect to device: {e}").clone_into(&mut app.status_message);
         }
     }
 
@@ -137,7 +136,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), R
                     } else if app.state == AppState::Raw
                         && let Err(e) = handle_raw(&mut app)
                     {
-                        app.status_message = format!("Raw command failed: {e}");
+                        format!("Raw command failed: {e}").clone_into(&mut app.status_message);
                     }
                 }
                 KeyCode::Char('t') => {
@@ -146,7 +145,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), R
                     } else if app.state == AppState::Test
                         && let Err(e) = handle_test(&mut app)
                     {
-                        app.status_message = format!("Test failed: {e}");
+                        format!("Test failed: {e}").clone_into(&mut app.status_message);
                     }
                 }
                 KeyCode::Char(' ') => {
@@ -216,20 +215,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), R
                             AppState::Password => handle_password(&mut app),
                             AppState::Action => {
                                 if let Err(e) = handle_action(&mut app) {
-                                    app.status_message = format!("Action failed: {e}");
+                                    format!("Action failed: {e}").clone_into(&mut app.status_message);
                                 }
                             }
                             AppState::Raw => {
                                 if let Err(e) = handle_raw(&mut app) {
-                                    app.status_message = format!("Raw command failed: {e}");
+                                    format!("Raw command failed: {e}").clone_into(&mut app.status_message);
                                 }
                             }
                             AppState::Test => {
                                 if let Err(e) = handle_test(&mut app) {
-                                    app.status_message = format!("Test failed: {e}");
+                                    format!("Test failed: {e}").clone_into(&mut app.status_message);
                                 }
                             }
-                            _ => {}
+                            AppState::Main => {}
                         }
                     }
                 }
@@ -289,14 +288,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> Result<(), R
         }
 
         if last_tick.elapsed() >= tick_rate {
-            app.on_tick();
+            App::on_tick();
             last_tick = Instant::now();
         }
     }
 }
 
 fn update_inventory(app: &mut App) {
-    app.status_message = "Scanning for tags...".to_owned();
+    "Scanning for tags...".clone_into(&mut app.status_message);
     if let Some(ref device) = app.device {
         match UhfRfidApi::inventory(device) {
             Ok(tags) => {
@@ -310,42 +309,41 @@ fn update_inventory(app: &mut App) {
                     .collect();
 
                 if app.tags.is_empty() {
-                    app.status_message = "No tags found.".to_owned();
+                    "No tags found.".clone_into(&mut app.status_message);
                 } else {
-                    app.status_message = format!("Found {} tags.", app.tags.len());
+                    format!("Found {} tags.", app.tags.len()).clone_into(&mut app.status_message);
                 }
             }
             Err(e) => {
-                app.status_message = format!("Inventory failed: {e}");
+                format!("Inventory failed: {e}").clone_into(&mut app.status_message);
             }
         }
     } else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
     }
 }
 
 fn handle_read(app: &mut App) {
-    app.status_message = "Reading tag...".to_owned();
+    "Reading tag...".clone_into(&mut app.status_message);
 
     if let Some(ref device) = app.device {
         // Ensure at least one tag is present so the device has a target
         match UhfRfidApi::inventory(device) {
             Ok(tags) => {
                 if tags.is_empty() {
-                    app.status_message =
-                        "No tags in range. Please place a tag near the reader.".to_owned();
+                        "No tags in range. Please place a tag near the reader.".clone_into(&mut app.status_message);
                     return;
                 }
             }
             Err(e) => {
-                app.status_message = format!("Inventory failed: {e}");
+                format!("Inventory failed: {e}").clone_into(&mut app.status_message);
                 // Don't clear previous results; allow the user to see the last successful read
                 return;
             }
         }
 
         let address = app.read_address.parse::<u32>().unwrap_or(0);
-        let word_count = app.read_word_count.parse::<u32>().unwrap_or(4);
+        let word_count = app.read_word_count.parse::<u32>().unwrap_or(8);
 
         // Check if we're reading all banks or a specific bank
         if app.read_all_banks() {
@@ -372,11 +370,11 @@ fn handle_read(app: &mut App) {
                         };
                         *stored = data;
 
-                        // Store data for EPC bank in the first tag (for a quick view)
+                        // Store data for the EPC bank in the first tag (for a quick view)
                         if *bank == MemoryBank::Epc
                             && let Some(tag) = app.tags.first_mut()
                         {
-                            tag.data = stored.clone();
+                            tag.data.clone_from(stored);
                             tag.data_bank = Some(*bank);
                         }
                         combined_data.extend_from_slice(stored);
@@ -391,37 +389,36 @@ fn handle_read(app: &mut App) {
 
             if success {
                 let total = combined_data.len();
-                app.status_message =
-                    format!("Read all banks successfully (total {total} byte(s)).");
+                    format!("Read all banks successfully (total {total} byte(s)).").clone_into(&mut app.status_message);
                 app.result_data = combined_data;
                 // Mark that effectively all banks were read
                 app.clear_last_read_flags();
                 app.mark_last_read(MemoryBank::Reserved);
             } else {
-                app.status_message = format!("Read failed: {error_msg}");
+                format!("Read failed: {error_msg}").clone_into(&mut app.status_message);
             }
         } else {
             // Read a specific bank
             let bank = app.read_bank;
             match UhfRfidApi::read(device, bank, address, word_count) {
                 Ok(data) => {
-                    app.status_message = format!("Read {bank:?} successful!");
-                    app.result_data = data.clone();
+                    format!("Read {bank:?} successful!").clone_into(&mut app.status_message);
+                    app.result_data.clone_from(&data);
 
                     // Update per-bank buffers: set the selected bank buffer, clear others
                     match bank {
                         MemoryBank::Epc => {
-                            app.result_epc = data.clone();
+                            app.result_epc.clone_from(&data);
                             app.result_tid.clear();
                             app.result_user.clear();
                         }
                         MemoryBank::Tid => {
-                            app.result_tid = data.clone();
+                            app.result_tid.clone_from(&data);
                             app.result_epc.clear();
                             app.result_user.clear();
                         }
                         MemoryBank::User => {
-                            app.result_user = data.clone();
+                            app.result_user.clone_from(&data);
                             app.result_epc.clear();
                             app.result_tid.clear();
                         }
@@ -439,18 +436,18 @@ fn handle_read(app: &mut App) {
                     }
                 }
                 Err(e) => {
-                    app.status_message = format!("Read failed: {e}");
+                    format!("Read failed: {e}").clone_into(&mut app.status_message);
                 }
             }
         }
     } else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
     }
 }
 
 fn handle_write(app: &mut App) {
     let Some(device) = app.device.as_ref() else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
         return;
     };
 
@@ -458,25 +455,23 @@ fn handle_write(app: &mut App) {
     match UhfRfidApi::inventory(device) {
         Ok(tags) => {
             if tags.is_empty() {
-                app.status_message =
-                    "No tags in range. Please place a tag near the reader.".to_owned();
+                    "No tags in range. Please place a tag near the reader.".clone_into(&mut app.status_message);
                 return;
             }
             if tags.len() > 1 && app.pending_confirm != Some(PendingConfirm::Write) {
                 app.pending_confirm = Some(PendingConfirm::Write);
-                app.status_message =
                     "Warning: Multiple tags detected. Press Enter again to confirm write."
-                        .to_owned();
+                        .clone_into(&mut app.status_message);
                 return;
             }
         }
         Err(e) => {
-            app.status_message = format!("Inventory failed: {e}");
+            format!("Inventory failed: {e}").clone_into(&mut app.status_message);
             return;
         }
     }
 
-    app.status_message = "Writing to tag...".to_owned();
+    "Writing to tag...".clone_into(&mut app.status_message);
 
     let bank = app.write_bank;
     let address = app.write_address.parse::<u32>().unwrap_or(0);
@@ -485,25 +480,25 @@ fn handle_write(app: &mut App) {
     if let Ok(data) = UhfRfidApi::ascii_to_hex(&app.write_data) {
         match UhfRfidApi::write(device, bank, address, &data) {
             Ok(()) => {
-                app.status_message = "Write successful!".to_owned();
+                "Write successful!".clone_into(&mut app.status_message);
                 app.pending_confirm = None;
                 // Update inventory to reflect changes
                 update_inventory(app);
             }
             Err(e) => {
-                app.status_message = format!("Write failed: {e}");
+                format!("Write failed: {e}").clone_into(&mut app.status_message);
                 app.pending_confirm = None;
             }
         }
     } else {
-        app.status_message = "Invalid hex data format.".to_owned();
+        "Invalid hex data format.".clone_into(&mut app.status_message);
         app.pending_confirm = None;
     }
 }
 
 fn handle_lock(app: &mut App) {
     let Some(device) = app.device.as_ref() else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
         return;
     };
 
@@ -511,8 +506,7 @@ fn handle_lock(app: &mut App) {
     match UhfRfidApi::inventory(device) {
         Ok(tags) => {
             if tags.is_empty() {
-                app.status_message =
-                    "No tags in range. Please place a tag near the reader.".to_owned();
+                "No tags in range. Please place a tag near the reader.".clone_into(&mut app.status_message);
                 return;
             }
             if app.pending_confirm != Some(PendingConfirm::Lock) {
@@ -528,19 +522,19 @@ fn handle_lock(app: &mut App) {
             }
         }
         Err(e) => {
-            app.status_message = format!("Inventory failed: {e}");
+            format!("Inventory failed: {e}").clone_into(&mut app.status_message);
             return;
         }
     }
 
-    app.status_message = "Locking tag...".to_owned();
+    "Locking tag...".clone_into(&mut app.status_message);
     match UhfRfidApi::lock_memory_bank(device, app.lock_bank, app.lock_action) {
         Ok(()) => {
-            app.status_message = "Lock operation successful!".to_owned();
+            "Lock operation successful!".clone_into(&mut app.status_message);
             app.pending_confirm = None;
         }
         Err(e) => {
-            app.status_message = format!("Lock operation failed: {e}");
+            format!("Lock operation failed: {e}").clone_into(&mut app.status_message);
             app.pending_confirm = None;
         }
     }
@@ -548,36 +542,35 @@ fn handle_lock(app: &mut App) {
 
 fn handle_password(app: &mut App) {
     if app.tags.is_empty() {
-        app.status_message = "No tags in range. Please place a tag near the reader.".to_owned();
+        "No tags in range. Please place a tag near the reader.".clone_into(&mut app.status_message);
         return;
     }
 
-    app.status_message = "Setting password...".to_owned();
+    "Setting password...".clone_into(&mut app.status_message);
 
     if let Some(device) = app.device.as_ref() {
         // Parse password
         match u32::from_str_radix(&app.password, 16) {
             Ok(password) => match UhfRfidApi::set_access_password(device, password) {
                 Ok(()) => {
-                    app.status_message = "Password set successfully!".to_owned();
+                    "Password set successfully!".clone_into(&mut app.status_message);
                 }
                 Err(e) => {
-                    app.status_message = format!("Failed to set password: {e}");
+                    format!("Failed to set password: {e}").clone_into(&mut app.status_message);
                 }
             },
             Err(_) => {
-                app.status_message =
-                    "Invalid password format. Use hex format (e.g. 12345678).".to_owned();
+                "Invalid password format. Use hex format (e.g. 12345678).".clone_into(&mut app.status_message);
             }
         }
     } else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
     }
 }
 
 fn handle_action(app: &mut App) -> Result<(), RfidError> {
     let Some(device) = app.device.as_ref() else {
-        app.status_message = "No device connected".to_owned();
+        "No device connected".clone_into(&mut app.status_message);
         return Ok(());
     };
 
@@ -596,20 +589,20 @@ fn handle_action(app: &mut App) -> Result<(), RfidError> {
     }
 
     if actions.is_empty() {
-        app.status_message = "No actions selected".to_owned();
+        "No actions selected".clone_into(&mut app.status_message);
         return Ok(());
     }
 
     let time: u8 = if let Ok(t) = app.action_time.parse() {
         t
     } else {
-        app.status_message = "Invalid time value".to_owned();
+        "Invalid time value".clone_into(&mut app.status_message);
         return Ok(());
     };
 
     // Perform the actions
     UhfRfidApi::device_action(device, &actions, time)?;
-    app.status_message = "Device actions performed successfully".to_owned();
+    "Device actions performed successfully".clone_into(&mut app.status_message);
     app.state = AppState::Main;
 
     Ok(())
@@ -617,37 +610,33 @@ fn handle_action(app: &mut App) -> Result<(), RfidError> {
 
 fn handle_raw(app: &mut App) -> Result<(), RfidError> {
     let Some(device) = app.device.as_ref() else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
         return Ok(());
     };
-
-    // validate input
-    let data = if let Ok(d) = UhfRfidApi::ascii_to_hex(&app.raw_input) {
-        d
-    } else {
-        app.status_message = "Invalid hex string (must be even length and 0-9A-F).".to_owned();
-        return Ok(());
+    let Ok(data) = UhfRfidApi::ascii_to_hex(&app.raw_input) else {
+        "Invalid hex string (must be even length and 0-9A-F).".clone_into(&mut app.status_message);
+                 return Ok(());
     };
 
     if app.pending_confirm != Some(PendingConfirm::Raw) {
         app.pending_confirm = Some(PendingConfirm::Raw);
-        app.status_message = "Manual command is risky. Press Enter again to send.".to_owned();
+        "Manual command is risky. Press Enter again to send.".clone_into(&mut app.status_message);
         return Ok(());
     }
 
     // send
     let written = device.write(&data)?;
-    app.status_message = format!("Sent {written} bytes. Waiting for response...");
+    format!("Sent {written} bytes. Waiting for response...").clone_into(&mut app.status_message);
 
     let mut buffer = [0u8; 256];
     match device.read(&mut buffer) {
         Ok(bytes_read) if bytes_read > 0 => {
             app.raw_response = buffer[..bytes_read].to_vec();
-            app.status_message = format!("Received {bytes_read} bytes.");
+            format!("Received {bytes_read} bytes.").clone_into(&mut app.status_message);
         }
         Ok(_) => {
             app.raw_response.clear();
-            app.status_message = "No response received (timeout).".to_owned();
+            "No response received (timeout).".clone_into(&mut app.status_message);
         }
         Err(e) => {
             app.raw_response.clear();
@@ -661,15 +650,15 @@ fn handle_raw(app: &mut App) -> Result<(), RfidError> {
 
 fn handle_test(app: &mut App) -> Result<(), RfidError> {
     let Some(device) = app.device.as_ref() else {
-        app.status_message = "No device connected.".to_owned();
+        "No device connected.".clone_into(&mut app.status_message);
         return Ok(());
     };
     // Basic test similar to CLI
     UhfRfidApi::read(device, MemoryBank::Epc, 0, 8)?;
     UhfRfidApi::read(device, MemoryBank::Tid, 0, 8)?;
     UhfRfidApi::read(device, MemoryBank::User, 0, 8)?;
-    UhfRfidApi::read(device, MemoryBank::Reserved, 0, 4)?;
+    UhfRfidApi::read(device, MemoryBank::Reserved, 0, 8)?;
     UhfRfidApi::device_action(device, &[DeviceAction::Beep, DeviceAction::GreenLed], 50)?;
-    app.status_message = "Test sequence completed successfully.".to_owned();
+    "Test sequence completed successfully.".clone_into(&mut app.status_message);
     Ok(())
 }

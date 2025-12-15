@@ -128,6 +128,44 @@ impl Interface {
         }
     }
 
+    /// Get the raw EPC list (first 47 hex characters of valid responses)
+    ///
+    /// # Returns
+    /// Vector of hex strings representing detected tags
+    ///
+    /// # Errors
+    /// Returns an error if USB communication fails, times out, or the device response is invalid.
+    pub fn get_epc_list_raw(&self, device: &impl UsbIo) -> Result<Vec<String>> {
+        let mut responses = Vec::new();
+
+        // Start inventory command
+        let command = vec![3, 2, 0x55, 0x80];
+        self.send_command(device, &command)?;
+
+        // Read initial response
+        let _ = self.read_response(device, Duration::from_secs(2))?;
+
+        // Get up to 10 tag responses
+        for _ in 0..10 {
+            let followup = vec![3, 2, 0x55, 0x91];
+            if self.send_command(device, &followup).is_err() {
+                break;
+            }
+
+            match self.read_response(device, Duration::from_secs(2)) {
+                Ok(resp) if resp.len() >= 5 => {
+                    let hex_str: String = hex::encode_upper(&resp);
+                    if !hex_str.starts_with("0402559100") { // Skip invalid responses
+                        responses.push(hex_str);
+                    }
+                }
+                _ => break,
+            }
+        }
+
+        Ok(responses)
+    }
+
     /// Read data from the UHF tag
     ///
     /// # Arguments
@@ -360,48 +398,4 @@ impl Interface {
         }
     }
 
-    /// Get the raw EPC list (first 47 hex characters of valid responses)
-    ///
-    /// # Returns
-    /// Vector of hex strings representing detected tags
-    ///
-    /// # Errors
-    /// Returns an error if USB communication fails, times out, or the device response is invalid.
-    pub fn get_epc_list_raw(&self, device: &impl UsbIo) -> Result<Vec<String>> {
-        let mut responses = Vec::new();
-
-        // Start inventory command
-        let command = vec![3, 2, 0x55, 0x80];
-        self.send_command(device, &command)?;
-
-        // Read initial response
-        let _ = self.read_response(device, Duration::from_secs(2))?;
-
-        // Get up to 10 tag responses
-        for _ in 0..10 {
-            let followup = vec![3, 2, 0x55, 0x91];
-            if self.send_command(device, &followup).is_err() {
-                break;
-            }
-
-            match self.read_response(device, Duration::from_secs(2)) {
-                Ok(resp) if resp.len() >= 5 => {
-                    let hex_str = hex::encode(&resp);
-                    let short_hex = if hex_str.len() >= 47 {
-                        &hex_str[..47]
-                    } else {
-                        &hex_str
-                    };
-
-                    // // Skip invalid responses
-                    if short_hex != "04025591000000000000000000000000000000000000000" {
-                        responses.push(short_hex.to_string());
-                    }
-                }
-                _ => break,
-            }
-        }
-
-        Ok(responses)
-    }
 }
